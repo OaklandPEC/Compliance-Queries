@@ -19,11 +19,26 @@ def getAPI():
     print(df.describe())
     #replace filepath as needed
     #potentially making edits to allow for this
-    df.to_csv('/Users/chrismullins/dev/Public Ethics Comission/compliance queries/CSV/'+csvName+'.csv')
+    
+    #Requests another API to append to the first one
+    print('Would you like to add another API? Respond Y for Yes and N for No\n')
+    userInput = input('Respond Y for Yes and N for No\n')
+    if userInput == 'Y':
+        api2 = input('Paste the link to the API here')
+        df2 = pd.read_json(api2)
+        df.append(df2)
+        df.to_csv('/Users/chrismullins/dev/Public Ethics Comission/compliance queries/CSV/'+csvName+'.csv')
+        print('File created!\n')
+        print(df.describe())
+    elif userInput == 'N':
+        print('We will not add another API at this time.')
+    else:
+        print('Sorry, please response with either Y or N')
+    #Data visualization
 
 #Runs function
-getAPI()
 
+getAPI()
 
 
 
