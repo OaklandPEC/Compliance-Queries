@@ -1,44 +1,42 @@
 import requests
 import json
 import pandas as pd
+from datetime import datetime
+from sodapy import Socrata
 
+# Unauthenticated client only works with public data sets. Note 'None'
+# in place of application token, and no username or password:
+client = Socrata("data.oaklandca.gov", None)
 
-#function that requests csv filename and API link
-def getAPI():
-    print("Hello! This program will output CSV files from Socrata,\n")
-    print("at this point in time, please only use API from the API seciton of data.oaklandca.gov\n")
-    csvName = input("What would you like to name this file?: ")
-    print("               ")
-    #stores API link as URL to feed to read_json
-    api = input("Paste the link to the API here:  ")
+#Dictionary containing all data
+#Itemized is Schedule A and Non-Monetary Contributions is Schedule C
+dataDict =  {'Summary Totals': "rsxe-vvuw", 'Late Contributions': "qact-u8hq", 'Non-Monetary Contributions': "ba44-jqtm", 'Itemized Cash Contributions': "3xq4-ermg"}
+#TODO: Integrate some kind of select screen where you can highlight the different types of documents to use their dictionary value
 
-    df = pd.read_json(api)
-    df.head(5)
-    print(df)
-    #produces calculations based on data such as mean, min, percentage values and more.
-    print(df.describe())
-    #replace filepath as needed
-    #potentially making edits to allow for this
-    
-    #Requests another API to append to the first one
-    print('Would you like to add another API? Respond Y for Yes and N for No\n')
-    userInput = input('Respond Y for Yes and N for No\n')
-    if userInput == 'Y':
-        api2 = input('Paste the link to the API here')
-        df2 = pd.read_json(api2)
-        df.append(df2)
-        df.to_csv('/Users/chrismullins/dev/Public Ethics Comission/compliance queries/CSV/'+csvName+'.csv')
-        print('File created!\n')
-        print(df.describe())
-    elif userInput == 'N':
-        print('We will not add another API at this time.')
-    else:
-        print('Sorry, please response with either Y or N')
-    #Data visualization
+# Example authenticated client (needed for non-public datasets):
+# client = Socrata(data.oaklandca.gov,
+#                  MyAppToken,
+#                  userame="user@example.com",
+#                  password="AFakePassword")
 
-#Runs function
+# First 2000 results, returned as JSON from API / converted to Python list of
+# dictionaries by sodapy.
+results1 = client.get(dataDict['Itemized Cash Contributions'], limit=100000)
+results2 = client.get(dataDict['Non-Monetary Contributions'], limit=100000)
 
-getAPI()
+# Convert to pandas DataFrame
+results_df1 = pd.DataFrame.from_records(results1)
+results_df2 = pd.DataFrame.from_records(results2)
 
-
-
+#Append Schedule C filer_id to Schedule A
+results_df1.append(results_df2['filer_id'])
+results_df1['tran_date'] = pd.to_datetime(results_df1['tran_date'])
+results_df1.sort_values(by='tran_date', axis='rows')
+results_df1 = results_df1.loc[results_df1['tran_date'] > datetime(2013, 1, 1)]
+#print(results_df1['tran_date'])
+#print(results_df1.dtypes)
+#results_df1.append(results_df2['contest'])
+#results_df1.append(results_df2['cand'])
+#results_df1.append(results_df2[''])
+results_df1.to_csv('/Users/chrismullins/dev/Public Ethics Comission/compliance queries/CSV/blah1.csv')
+#TODO: Personalize save location
